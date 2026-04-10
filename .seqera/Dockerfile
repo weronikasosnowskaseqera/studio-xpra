@@ -1,0 +1,106 @@
+ARG CONNECT_CLIENT_VERSION
+
+FROM public.cr.seqera.io/platform/connect-client:0.11 AS connect
+
+FROM mambaorg/micromamba:2.5.0 as micromamba
+
+FROM ubuntu:24.04
+
+ARG CONNECT_CLIENT_VERSION
+LABEL io.seqera.connect.version="${CONNECT_CLIENT_VERSION}"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+ARG MAMBA_USER=root
+ARG MAMBA_USER_ID=0
+ARG MAMBA_USER_GID=0
+ENV MAMBA_USER=$MAMBA_USER
+ENV MAMBA_ROOT_PREFIX="/opt/conda"
+ENV MAMBA_EXE="/bin/micromamba"
+
+USER $MAMBA_USER
+
+RUN apt-get update --yes && apt-get install --yes --no-install-recommends \
+    apt-transport-https \
+    pciutils \
+    cups-filters \
+    cups-common \
+    cups-pdf \
+    ca-certificates \
+    git \
+    wget \
+    sudo \
+    libatomic1 \
+    python3.12 \
+    python3-cups \
+    python3-xdg \
+    python3-pyinotify \
+    python3-paramiko \
+    python3-netifaces \
+    python-is-python3 \
+    gnome-menus \
+    curl \
+    locales \
+    openjdk-17-jre \
+    gnupg \
+    kmod \
+    x11-xkb-utils \
+    dbus-x11 \
+    xvfb \
+    terminator && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY --from=micromamba "$MAMBA_EXE" "$MAMBA_EXE"
+COPY --from=micromamba /usr/local/bin/_activate_current_env.sh /usr/local/bin/_activate_current_env.sh
+COPY --from=micromamba /usr/local/bin/_dockerfile_shell.sh /usr/local/bin/_dockerfile_shell.sh
+COPY --from=micromamba /usr/local/bin/_entrypoint.sh /usr/local/bin/_entrypoint.sh
+COPY --from=micromamba /usr/local/bin/_dockerfile_initialize_user_accounts.sh /usr/local/bin/_dockerfile_initialize_user_accounts.sh
+COPY --from=micromamba /usr/local/bin/_dockerfile_setup_root_prefix.sh /usr/local/bin/_dockerfile_setup_root_prefix.sh
+
+RUN /usr/local/bin/_dockerfile_initialize_user_accounts.sh && \
+    /usr/local/bin/_dockerfile_setup_root_prefix.sh
+
+
+#### Install Xpra ####
+RUN wget -O "/usr/share/keyrings/xpra.asc" https://xpra.org/xpra.asc && \
+    wget -O "/etc/apt/sources.list.d/xpra.sources"  https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/noble/xpra.sources
+
+ARG xpra_version=6.2.0-r2-1
+RUN apt-get update --yes && apt-get install --yes --no-install-recommends \
+    xpra-html5 \
+    xpra=${xpra_version} \
+    xpra-client=${xpra_version} \
+    xpra-client-gtk3=${xpra_version} \
+    xpra-server=${xpra_version} \
+    xpra-codecs=${xpra_version} \
+    xpra-codecs-extras=${xpra_version} \
+    xpra-common=${xpra_version} \
+    xpra-x11=${xpra_version} && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    dpkg-reconfigure --frontend=noninteractive locales && \
+    update-locale LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+
+SHELL ["/usr/local/bin/_dockerfile_shell.sh"]
+
+# Copy the welcome message into the container and append it to the .bashrc
+COPY .seqera/welcome_ASCII.txt /root/.welcome_ASCII.txt
+RUN echo "cat /root/.welcome_ASCII.txt" >> /root/.bashrc
+COPY .seqera/entry.sh /bin
+
+COPY .seqera/seqera-wallpaper.png /usr/share/xpra/www/background.png
+
+WORKDIR /workspace
+RUN ln -s /workspace /root
+
+# Add connect binary
+COPY --from=connect /usr/bin/connect-client /usr/bin/connect-client
+# Install connect dependencies
+RUN /usr/bin/connect-client --install
+# Optionally set tool identifier for metrics tracking purposes
+RUN /usr/bin/connect-client --setToolIdentifier xpra
+
+ENTRYPOINT ["/usr/bin/connect-client", "--entrypoint"]
+CMD ["bash",  "/bin/entry.sh"]
