@@ -36,5 +36,5 @@ To create a customized version:
 The pre-built image is available at:
 
 ```
-public.cr.seqera.io/platform/data-studio-xpra:6.2.0-r2-1-0.12.0
+public.cr.seqera.io/platform/data-studio-xpra:6.2.0-r2-1-0.12.1
 ```
