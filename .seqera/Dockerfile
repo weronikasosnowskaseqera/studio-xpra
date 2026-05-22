@@ -1,6 +1,5 @@
-ARG CONNECT_CLIENT_VERSION
-
-FROM public.cr.seqera.io/platform/connect-client:0.11 AS connect
+ARG CONNECT_CLIENT_VERSION=0.12.0
+FROM public.cr.seqera.io/platform/connect-client:${CONNECT_CLIENT_VERSION} AS connect
 
 FROM mambaorg/micromamba:2.5.0 as micromamba
 
@@ -86,11 +85,11 @@ ENV LANG=en_US.UTF-8
 SHELL ["/usr/local/bin/_dockerfile_shell.sh"]
 
 # Copy the welcome message into the container and append it to the .bashrc
-COPY .seqera/welcome_ASCII.txt /root/.welcome_ASCII.txt
+COPY ./welcome_ASCII.txt /root/.welcome_ASCII.txt
 RUN echo "cat /root/.welcome_ASCII.txt" >> /root/.bashrc
-COPY .seqera/entry.sh /bin
+COPY ./entry.sh /bin
 
-COPY .seqera/seqera-wallpaper.png /usr/share/xpra/www/background.png
+COPY ./seqera-wallpaper.png /usr/share/xpra/www/background.png
 
 WORKDIR /workspace
 RUN ln -s /workspace /root
