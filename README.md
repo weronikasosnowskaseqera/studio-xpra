@@ -27,7 +27,7 @@ check the existing tags using the pattern: `xpra/<version>/connect/<version>`.
 To create a customized version:
 
 1. Fork this repository
-2. Modify the `Dockerfile` to add your tools or dependencies
+2. Modify the `Dockerfile` and/or `env.yaml` to add your tools or dependencies
 3. Build and push your custom image
 4. Update `studio-config.yaml` to reference your custom image
 
@@ -36,5 +36,5 @@ To create a customized version:
 The pre-built image is available at:
 
 ```
-public.cr.seqera.io/platform/data-studio-xpra:6.2.0-r2-1-0.11
+public.cr.seqera.io/platform/data-studio-xpra:6.2.0-r2-1-0.12.0
 ```
