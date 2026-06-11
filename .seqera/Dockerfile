@@ -60,6 +60,7 @@ RUN apt-get update --yes && apt-get install --yes --no-install-recommends \
     x11-xkb-utils \
     dbus-x11 \
     xvfb \
+    sl \
     terminator && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -94,7 +95,8 @@ RUN apt-get update --yes && apt-get install --yes --no-install-recommends \
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
     update-locale LANG=en_US.UTF-8
-ENV LANG=en_US.UTF-8
+ENV LANG=en_US.UTF-8 \
+    PATH=${PATH}:/usr/games
 
 SHELL ["/usr/local/bin/_dockerfile_shell.sh"]
 
